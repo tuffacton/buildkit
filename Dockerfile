@@ -440,3 +440,20 @@ ENTRYPOINT ["rootlesskit", "buildkitd"]
 
 # buildkit builds the buildkit container image
 FROM buildkit-$TARGETOS${BUILDKIT_DEBUG:+-debug} AS buildkit
+
+# Add kubectl to the Docker container
+FROM alpine:${ALPINE_VERSION} AS kubectl
+
+# Specify the kubectl version to download
+ARG KUBECTL_VERSION=v1.28.2
+
+# Install kubectl
+RUN apk add --no-cache curl && \
+    curl -LO "https://dl.k8s.io/release/${KUBECTL_VERSION}/bin/linux/$(uname -m)/kubectl" && \
+    chmod +x kubectl && \
+    mv kubectl /usr/local/bin/
+
+# Copy kubectl into the main image
+FROM buildkit-export AS final-image
+COPY --from=kubectl /usr/local/bin/kubectl /usr/local/bin/kubectl
+
